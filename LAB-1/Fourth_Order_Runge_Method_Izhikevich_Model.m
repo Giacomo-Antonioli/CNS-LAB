@@ -36,6 +36,7 @@ if newV > 30
     newV=30;
     nextV = c;
     newU = newU + d;
+end
     
 end
 

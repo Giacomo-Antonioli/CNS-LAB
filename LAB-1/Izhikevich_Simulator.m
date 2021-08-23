@@ -2,7 +2,7 @@ function [] = Izhikevich_Simulator(model,params,other_params)
 %UNTITLED13 Summary of this function goes here
 %   Detailed explanation goes here
 
-a=params(1); b=params(2); c=params(3);d=params(4); I=params(5);
+a=params(1); b=params(2); c=params(3);d=params(4);
 tau=other_params(1);maxtspan=other_params(2);
 x=other_params(3); y=b*x;
 
@@ -143,19 +143,48 @@ switch model
         end;
         vector1=[0 T1 max(tspan) max(tspan)];vector2=-90+[0 0 20 0];
     case 'Spike Latency'
+        %%
+        % Here the Fourth Order Runge Method does not let the neuron fire
+        % so for correctness purpose I've implemented Euler's method.
+        % Update: Runge method lets the neuron fire by halving tau (and for
+        % proportions even maxspan). The Runge Approximation is left
+        % commented
+        %%
         T1=tspan(end)/10;
         for t=tspan
-            if t>T1 & t < T1+3
-                I=7.04;
-            else
-                I=0;
-            end;
-            [tmp1,tmp2,next]=Fourth_Order_Runge_Method_Izhikevich_Model(x,y,tau,a,b,c,d,I,model);
-            Membrane_potential_vector(end+1)=tmp1;
-            Recovery_Variable_vector(end+1)=tmp2;
-            x=next;
-            y=tmp2;
+        if t>T1 & t < T1+3 
+            I=7.04;
+        else
+            I=0;
         end;
+        x = x + tau*(0.04*x^2+5*x+140-y+I);
+        y = y + tau*a*(b*x-y);
+        if x > 30
+            Membrane_potential_vector(end+1)=30;
+            x = c;
+            y= y + d;
+        else
+            Membrane_potential_vector(end+1)=x;
+        end;
+        Recovery_Variable_vector(end+1)=y;
+        end;
+        %{      
+                tau=0.1;
+                maxpsan=50;
+                tspan=1:tau:maxspan;
+                for t=tspan
+                    if t>T1 & t < T1+3
+                        I=7.04;
+                    else
+                        I=0;
+                    end
+                    [tmp1,tmp2,next]=Fourth_Order_Runge_Method_Izhikevich_Model(x,y,tau,a,b,c,d,I,model);
+                    Membrane_potential_vector(end+1)=tmp1;
+                    Recovery_Variable_vector(end+1)=tmp2;
+                    x=next;
+                    y=tmp2;
+                end;
+        %}
         vector1=[0 T1 T1 T1+3 T1+3 max(tspan)];vector2=-90+[0 0 10 10 0 0];
     case 'Subthreshold oscillations'
         T1=tspan(end)/10;
@@ -256,8 +285,32 @@ switch model
         vector1=[0 10 10 15 15 70 70 75 75 80 80 85 85 max(tspan)];
         vector2=-85+[0 0  5  5  0  0  -5 -5 0  0  5  5  0  0];
     case 'Bistability'
+        %%
+        % Here the Fourth Order Runge Method does not let the neuron fire
+        % so for correctness purpose I've implemented Euler's method.
+        %% 
         T1=tspan(end)/8;
         T2 = 216;
+        for t=tspan
+            if ((t>T1) & (t < T1+5)) | ((t>T2) & (t < T2+5))
+                I=1.24;
+            else
+                I=0.24;
+            end;
+            x = x + tau*(0.04*x^2+5*x+140-y+I);
+            y = y + tau*a*(b*x-y);
+            if x > 30
+                Membrane_potential_vector(end+1)=30;
+                x = c;
+                y= y + d;
+            else
+                Membrane_potential_vector(end+1)=x;
+            end;
+            Recovery_Variable_vector(end+1)=y;
+        end;
+        
+        %{
+        
         for t=tspan
             if ((t>T1) & (t < T1+5)) | ((t>T2) & (t < T2+5))
                 I=1.24;
@@ -270,8 +323,14 @@ switch model
             x=next;
             y=tmp2;
         end;
+        
+        %}
         vector1=[0 T1 T1 (T1+5) (T1+5) T2 T2 (T2+5) (T2+5) max(tspan)];vector2=-90+[0 0 10 10 0 0 10 10 0 0];
     case 'Depolarizing After-Potential'
+        %%
+        % Here the Fourth Order Runge Method does not let the neuron fire
+        % so for correctness purpose I've implemented Euler's method.
+        %% 
         T1 = 10;
         for t=tspan
             if abs(t-T1)<1
@@ -279,12 +338,27 @@ switch model
             else
                 I=0;
             end;
-            [tmp1,tmp2,next]=Fourth_Order_Runge_Method_Izhikevich_Model(x,y,tau,a,b,c,d,I,model);
+            x = x + tau*(0.04*x^2+5*x+140-y+I);
+            y = y + tau*a*(b*x-y);
+            if x > 30
+                Membrane_potential_vector(end+1)=30;
+                x = c;
+                y= y + d;
+            else
+                Membrane_potential_vector(end+1)=x;
+            end;
+            Recovery_Variable_vector(end+1)=y;
+        end;
+        
+        %{
+        
+         [tmp1,tmp2,next]=Fourth_Order_Runge_Method_Izhikevich_Model(x,y,tau,a,b,c,d,I,model);
             Membrane_potential_vector(end+1)=tmp1;
             Recovery_Variable_vector(end+1)=tmp2;
             x=next;
             y=tmp2;
-        end;
+        
+        %}
         vector1=[0 T1-1 T1-1 T1+1 T1+1 max(tspan)];vector2=-90+[0 0 10 10 0 0];
     case 'Accomodation'
         II=[];
@@ -307,7 +381,11 @@ switch model
             II(end+1)=I;
         end;
         vector1=tspan;vector2=II*1.5-90;
-    case 'Inhibition-induced Spiking'
+    case 'Inhibition-induced Spiking'    
+        %%
+        % Here the Fourth Order Runge Method does not let the neuron fire
+        % so for correctness purpose I've implemented Euler's method.
+        %% 
         for t=tspan
             if (t < 50) | (t>250)
                 I=80;
@@ -328,30 +406,48 @@ switch model
             else
                 I=75;
             end;
+            x = x + tau*(0.04*x^2+5*x+140-y+I);
+            y = y + tau*a*(b*x-y);
+            if x > 30
+                Membrane_potential_vector(end+1)=30;
+                x = c;
+                y= y + d;
+            else
+                Membrane_potential_vector(end+1)=x;
+            end;
+            Recovery_Variable_vector(end+1)=y;
+        end;
+        
+        %{
+        
             [tmp1,tmp2,next]=Fourth_Order_Runge_Method_Izhikevich_Model(x,y,tau,a,b,c,d,I,model);
             Membrane_potential_vector(end+1)=tmp1;
             Recovery_Variable_vector(end+1)=tmp2;
             x=next;
             y=tmp2;
-        end;
+        
+        %}
         vector1=[0 50 50 250 250 max(tspan)];vector2=-80+[0 0 -10 -10 0 0];
 end
 
+folder=pwd;
 
-figure
-plot(tspan,Membrane_potential_vector,vector1,vector2);
-axis([0 max(tspan) -90 30])
+fig_spike=figure;
+spike=plot(tspan,Membrane_potential_vector,vector1,vector2);
+axis([0 max(tspan) -90 30]);
 title(model);
 subtitle('Membrane Potential Dynamics');
 xlabel('Time (t)');
-ylabel('Membrane Potential (u)')
+ylabel('Membrane Potential (u)');
+saveas(fig_spike,[folder,sprintf('/Membrane_Potential_Imgs/Membrane_Potential_Dynamics_for_%s.fig',model)])
 
-figure
-plot(Membrane_potential_vector,Recovery_Variable_vector)
+fig_phase=figure;
+phase=plot(Membrane_potential_vector,Recovery_Variable_vector);
 title(model);
 subtitle('Phase Portrait');
-xlabel('Membrane Potential (u)')
+xlabel('Membrane Potential (u)');
 ylabel('Recovery Variable (w)');
+saveas(fig_phase,[folder,sprintf('/Phase_Portrait_Imgs/Phase_Portrait_for_%s.fig',model)])
 
 
 
