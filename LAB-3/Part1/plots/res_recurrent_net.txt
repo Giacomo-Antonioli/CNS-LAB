@@ -1,0 +1,3 @@
+Best epoch = 400
+Train MSE | Val MSE | TEST MSE
+1.554669e-07 | 1.629546e-07 | 4.531912e-03

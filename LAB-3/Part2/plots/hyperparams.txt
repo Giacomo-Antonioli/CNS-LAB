@@ -1,0 +1,4 @@
+input scaling = 1.000000
+reservoir_untis = 500
+rho = 0.800000
+regularization param= 0.000000

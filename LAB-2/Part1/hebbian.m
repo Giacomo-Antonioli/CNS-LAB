@@ -1,10 +1,11 @@
 function [w_out,w_history,norm_history,diff] = hebbian(xtrain,eta,rule)
     
     training_size = size(xtrain,2); % Checking training set dimension
-    w = -1 + 2.*rand(2,1); % Weights random initialization
+    w = unifrnd(-1,1,2,1); % Weights random initialization
     max_epochs = 1000; % Maximum number of iterations
-    w_history = [];
-    norm_history = [];
+    
+    w_history = [w];
+    norm_history = [norm(w)];
     diff = [];
     tol=10e-5;
     iter=1;
@@ -13,27 +14,26 @@ function [w_out,w_history,norm_history,diff] = hebbian(xtrain,eta,rule)
     umean=mean(xtrain,2);
     while true
         
-        w_old = w;
         randp = randperm(training_size); % Generating random index
         for k=1:training_size
-        
-            xtrain_k = xtrain(:,randp(k));% Shuffling training set
+            w_old = w;
+            u_k = xtrain(:,randp(k));% Shuffling training set
             % Computing output via linear firing rate model
-            v = w'*xtrain_k;
+            v_k = w'*u_k;
            
             switch rule
                 case 'Naive'
-                     deltaW=v*xtrain_k;
+                     deltaW=v_k*u_k;
                 case 'Oja'
-                     deltaW=v*xtrain_k-alpha*(v^2)*w;
+                     deltaW=v_k*u_k-alpha*(v_k^2)*w;
                 case 'Sub_Norm'
-                     deltaW=v*xtrain_k-(v*sum(xtrain_k)*xtrain_k)/length(xtrain_k);
+                     deltaW=v_k*u_k-(v_k*sum(u_k)*u_k)/length(u_k);
                 case 'BCM'
-                     deltaW=v*xtrain_k*(v-tethav);
-                     tethav=tethav+(v*v-tethav);
+                     deltaW=v_k*u_k*(v_k-tethav);
+                     tethav=tethav+(v_k*v_k-tethav);
                 case 'Cov'
                     
-                     deltaW=((xtrain_k-umean).*xtrain_k).*w;%%%???????????????
+                     deltaW=((u_k-umean).*u_k).*w;%%%???????????????
                 
             end
            
@@ -44,12 +44,13 @@ function [w_out,w_history,norm_history,diff] = hebbian(xtrain,eta,rule)
         w_out = w;
         w_history(:,end+1) = w;
         norm_history(:,end+1) = norm(w);
-        iter=iter+1;
+        
         if norm(w-w_old)<tol ||  iter>max_epochs
             disp('MAX IT')
             disp(iter)
             break
         end
+        iter=iter+1;
         
     end
 end
